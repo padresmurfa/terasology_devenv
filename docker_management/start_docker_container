@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# determine the absolute directory name of src/Terasology
+pushd ../src/Terasology 2>&1 >> /dev/null
+SRC_TERASOLOGY=$(pwd)
+popd 2>&1 >> /dev/null
+
+user=$(whoami)
+
+# run our docker container
+# ... detached from this shell
+# ... removing it automatically when it is stopped
+# ... using a fixed name, terasology_devenv, for the running container
+# ... mounting the git-repository into the container
+# ... and selecting our docker image, which is named padresmurfa/terasology_devenv
+docker run \
+  --detach --tty \
+  --rm \
+  --name terasology_devenv \
+  --volume $SRC_TERASOLOGY:/home/$user/build/Terasology \
+  padresmurfa/terasology_devenv
+
+#  /bin/bash -ci /home/davidbrandt/copied_from_host/.start_docker_container
+

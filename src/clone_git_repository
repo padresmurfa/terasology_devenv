@@ -1,0 +1,7 @@
+######################################################
+# GIT Repository
+#   Terasology is stored in a git repo
+######################################################
+
+git clone https://github.com/MovingBlocks/Terasology.git
+

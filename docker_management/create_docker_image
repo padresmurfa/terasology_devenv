@@ -1,0 +1,12 @@
+#!/bin/bash
+
+USER=$(whoami)
+GID=$(id -g $USER)
+
+docker build \
+  --build-arg USERNAME=$USER \
+  --build-arg UID=$UID \
+  --build-arg GID=$GID \
+  --tag padresmurfa/terasology_devenv \
+  --file ./Dockerfile \
+  .
