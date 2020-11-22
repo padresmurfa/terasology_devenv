@@ -1,6 +1,6 @@
 ######################################################
-# BUILD Terasology
+# START the Terasology server
 ######################################################
 
-~/build/Terasology/gradlew
-~/build/Terasology/groovyw module init
+~/build/Terasology/gradlew server
+

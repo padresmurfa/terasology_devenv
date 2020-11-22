@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 openjdk:8
+FROM --platform=linux/amd64 ubuntu:16.04
 
 # the maintainer of this file is David Brandt, aka Padre Smurfa
 LABEL maintainer="padresmurfa@gmail.com"
@@ -12,10 +12,15 @@ RUN sed -i 's/DIR_MODE=0755/DIR_MODE=0750/g' /etc/adduser.conf
 ############################################################################################
 # APT
 #   we would like apt to be up-to-date at the time
-#   of creating the container
+#   of creating the container, and to install a number of basic tools, system tools, as
+#   well as developer tools
 ############################################################################################
 
-RUN apt-get update
+RUN apt-get update \
+ && apt-get install --assume-yes \
+    rsyslog curl less wget zip unzip vim \
+    rsyslog sudo \
+    git openjdk-8-jdk
 
 ############################################################################################
 # SYSLOG
@@ -24,19 +29,23 @@ RUN apt-get update
 #   from the get-go, thus we disable the kernel log
 ############################################################################################
 
-RUN apt-get --assume-yes install rsyslog \
- && sed -i '/imklog/s/^/#/' /etc/rsyslog.conf \
+RUN sed --in-place '/imklog/s/^/#/' /etc/rsyslog.conf \
  && service rsyslog start
 
 ############################################################################################
 # ROOT
-#   root would like to use /bin/bash as the default shell,
-#   be able to create sudoers, have less installed
+#   root would like to use /bin/bash as the default shell, and to be present in /home/root
+#   for the sake of consistency. Also, fix up the ugly bash prompt. We're not interessted
+#   in having the container hash in there.
 ############################################################################################
 
 RUN chsh --shell /bin/bash \
- && apt-get install less \
- && apt-get install --assume-yes sudo
+ && cd /home && ln -s /root root \
+ && sed --in-place 's/@\\h/@terasology_devenv/g' /etc/bash.bashrc \
+ && cp /etc/bash.bashrc /root/.bashrc \
+ && cp /etc/bash.bashrc /etc/skel/.bashrc \
+ && chown root:root /root/.bashrc \
+ && chmod 0750 /root/.bashrc
 
 ############################################################################################
 # USER
@@ -50,50 +59,18 @@ RUN chsh --shell /bin/bash \
 
 ARG USERNAME
 ARG UID
-ARG GID
 RUN addgroup $USERNAME \
- && adduser --shell /bin/bash --uid $UID --gid $GID $USERNAME \
+ && adduser --shell /bin/bash --uid $UID --ingroup $USERNAME $USERNAME \
  && usermod -aG sudo $USERNAME \
- && echo "$USERNAME     ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
- && chsh --shell /bin/bash
-USER $UID:$GID
+ && echo "$USERNAME     ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER $USERNAME
 
 ############################################################################################
-# SDKMAN
-#   gradle is installed via sdkman
+# PORTS
+#   The Terasology server will expose port 25777 when running
 ############################################################################################
 
-# sdkman requires unzip and zip to be installed
-RUN sudo apt-get install unzip \
- && sudo apt-get install --assume-yes zip
-
-# install sdkman, as per instructions: https://sdkman.io/install
-# note that 'sdk' and 'SDKMAN_DIR' are installed via .bashrc, thus
-# we need to run bash in interactive mode
-RUN ["/bin/bash", "-ci", \
-    "curl -s \"https://get.sdkman.io\" | sudo -i bash", \
-    "&&", \
-    "sudo -i source \"${SDKMAN_DIR}/bin/sdkman-init.sh\"", \
-    "&&", \
-    "sdk version"]
-
-############################################################################################
-# GRADLE
-#   Terasology is built via gradle
-############################################################################################
-
-# install gradle, as per https://gradle.org/install/#helpful-information
-ARG GRADLE_VERSION="6.7.1"
-# note that we are using the sdk command again, so we also need to run this
-# command using an interactive bash shell
-RUN ["/bin/bash", "-ci", "sudo -i sdk install gradle ${GRADLE_VERSION}"]
-
-############################################################################################
-# GIT
-#   Terasology is stored in git
-############################################################################################
-
-RUN sudo apt-get install git
+EXPOSE 25777
 
 ############################################################################################
 # SCRIPTS

@@ -19,6 +19,3 @@ docker run \
   --name terasology_devenv \
   --volume $SRC_TERASOLOGY:/home/$user/build/Terasology \
   padresmurfa/terasology_devenv
-
-#  /bin/bash -ci /home/davidbrandt/copied_from_host/.start_docker_container
-
